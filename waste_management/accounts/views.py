@@ -4,9 +4,9 @@ from django.shortcuts import render, redirect
 from django.urls import reverse_lazy
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
-from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
 from django.contrib.auth import login
+from allauth.account.forms import SignupForm
 
 class CustomLoginView(LoginView):
     template_name = 'accounts/login.html'
@@ -26,14 +26,13 @@ def signup_view(request):
         return redirect('dashboard:dashboard')
     
     if request.method == 'POST':
-        form = UserCreationForm(request.POST)
+        form = SignupForm(request.POST)
         if form.is_valid():
-            user = form.save()
-            login(request, user)
+            user = form.save(request)
             messages.success(request, 'Account created successfully!')
             return redirect('dashboard:dashboard')
     else:
-        form = UserCreationForm()
+        form = SignupForm()
     
     return render(request, 'accounts/signup.html', {'form': form})
 
