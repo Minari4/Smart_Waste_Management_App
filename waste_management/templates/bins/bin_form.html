@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}{% if edit_mode %}Edit Bin{% else %}Add New Bin{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h3 class="mb-0">{% if edit_mode %}Edit Bin{% else %}Add New Bin{% endif %}</h3>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            {{ form.identifier.label_tag }} {{ form.identifier }}
+                        </div>
+                        <div class="mb-3">
+                            {{ form.bin_type.label_tag }} {{ form.bin_type }}
+                        </div>
+                        <div class="mb-3">
+                            {{ form.location.label_tag }} {{ form.location }}
+                        </div>
+                        <div class="mb-3">
+                            {{ form.current_status.label_tag }} {{ form.current_status }}
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="id_latitude" class="form-label">Latitude</label>
+                                <input type="text" id="id_latitude" name="latitude" class="form-control" value="{{ form.latitude.value|default_if_none:'' }}" readonly>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="id_longitude" class="form-label">Longitude</label>
+                                <input type="text" id="id_longitude" name="longitude" class="form-control" value="{{ form.longitude.value|default_if_none:'' }}" readonly>
+                            </div>
+                        </div>
+                        <div id="map" style="height: 350px; margin-bottom: 20px; border-radius: 8px; overflow: hidden;"></div>
+                        <div class="d-flex justify-content-between">
+                            <button type="submit" class="btn btn-success">{% if edit_mode %}Save Changes{% else %}Save{% endif %}</button>
+                            <a href="{% url 'bins:bin_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var defaultLat = parseFloat('{{ form.latitude.value|default_if_none:"14.5995" }}');
+    var defaultLng = parseFloat('{{ form.longitude.value|default_if_none:"120.9842" }}');
+    var map = L.map('map').setView([defaultLat, defaultLng], 13);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    var marker = L.marker([defaultLat, defaultLng], {draggable: true}).addTo(map);
+
+    function updateInputs(lat, lng) {
+        document.getElementById('id_latitude').value = lat.toFixed(6);
+        document.getElementById('id_longitude').value = lng.toFixed(6);
+    }
+
+    map.on('click', function(e) {
+        marker.setLatLng(e.latlng);
+        updateInputs(e.latlng.lat, e.latlng.lng);
+    });
+
+    marker.on('dragend', function(e) {
+        var latlng = marker.getLatLng();
+        updateInputs(latlng.lat, latlng.lng);
+    });
+
+    // Initialize input values
+    updateInputs(defaultLat, defaultLng);
+});
+</script>
+<script>
+document.querySelector('form').addEventListener('submit', function(e) {
+    var lat = document.getElementById('id_latitude').value;
+    var lng = document.getElementById('id_longitude').value;
+    if (!lat || !lng) {
+        alert('Please select a location on the map.');
+        e.preventDefault();
+    }
+});
+</script>
+{% endblock %}
